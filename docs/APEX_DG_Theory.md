@@ -136,8 +136,59 @@ $$\Delta G = \lambda \cdot H + \lambda \cdot [(1-F) + e^{-\tau \cdot L} + \delta
 
 ---
 
-## 6. 参考资料
+---
+
+## 6. SkillSynth 核心公式
+
+> SkillSynth = Graph → Sample → Instantiate
+> Trajectory ∝ Path_Graph
+
+### 6.1 任务合成通过率
+
+$$P_{\text{task}} = \frac{N_{\text{usable}}}{N_{\text{path}}} \times 100\% = \frac{3560}{3721} \approx \mathbf{95.7\%}$$
+
+### 6.2 模型参数量倍率
+
+$$R_{\text{size}} = \frac{480\text{B}}{32\text{B}} = \mathbf{15}$$
+
+### 6.3 性能提升（Terminal-Bench 1.0）
+
+$$\Delta_{1.0} = 33.8\% - 23.9\% = \mathbf{+9.9\%}$$
+
+### 6.4 性能差距（Terminal-Bench 2.0）
+
+$$\Delta_{2.0} = 39.6\% - 29.6\% = \mathbf{-10\%}$$
+
+### 6.5 场景-技能图规模
+
+$$\text{Nodes} = 82073,\quad \text{Edges} = 185529,\quad \text{Skills} = 57214$$
+
+### 6.6 平均修复轮次
+
+$$\bar{R} = \mathbf{2.3}$$
+
+### 6.7 单任务成本
+
+$$C_{\text{task}} = \mathbf{\$27.3}$$
+
+### 6.8 变量定义
+
+| 变量 | 含义 | 值 |
+|------|------|-----|
+| $P_{\text{task}}$ | 任务合成通过率 | 95.7% |
+| $N_{\text{usable}}$ | 可用路径数 | 3560 |
+| $N_{\text{path}}$ | 总路径数 | 3721 |
+| $R_{\text{size}}$ | 模型参数量倍率 | 15 |
+| $\Delta_{1.0}$ | Terminal-Bench 1.0性能提升 | +9.9% |
+| $\Delta_{2.0}$ | Terminal-Bench 2.0性能差距 | -10% |
+| $\bar{R}$ | 平均修复轮次 | 2.3 |
+| $C_{\text{task}}$ | 单任务成本 | \$27.3 |
+
+---
+
+## 7. 参考资料
 
 1. Shannon, C.E. (1948). "A Mathematical Theory of Communication"
 2. Cover, T.M. & Thomas, J.A. (2006). "Elements of Information Theory"
 3. APEX Framework Documentation
+4. SkillSynth: Scene-Skill Graph for LLM Autonomous Problem Solving
