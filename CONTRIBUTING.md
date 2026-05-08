@@ -1,96 +1,87 @@
-# 贡献指南
+# 贡献指南 CONTRIBUTING
 
-感谢您对 LLM-ΔG-AntiHallucination 的关注！
+感谢您对盘古的兴趣！欢迎贡献代码。
 
-## 如何贡献
+---
 
-### 报告问题
-
-- 使用 GitHub Issues 报告 Bug
-- 描述问题详情和复现步骤
-- 提供相关日志和截图
-
-### 提交代码
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
-
-### 代码规范
-
-- 使用 Python 3.8+
-- 遵循 PEP 8
-- 所有新功能必须有测试
-- 更新相关文档
-
-### 测试
-
-```bash
-# 运行所有测试
-pytest tests/ -v
-
-# 运行特定测试
-pytest tests/test_delta_g.py -v
-
-# 生成覆盖率报告
-pytest tests/ --cov=. --cov-report=html
-```
-
-## 开发环境设置
+## 开发环境
 
 ```bash
 # 克隆仓库
-git clone https://github.com/ApexSpiral/LLM-ΔG-AntiHallucination.git
-cd LLM-ΔG-AntiHallucination
-
-# 创建虚拟环境
-python3 -m venv venv
-source venv/bin/activate
+git clone https://github.com/ApexSpiral/LLM-Pangu.git
+cd LLM-Pangu
 
 # 安装依赖
-pip install -r requirements.txt
+bash install.sh
 
-# 运行初始化
-python run_init.py
-
-# 运行测试
-pytest tests/ -v
+# 创建虚拟环境（推荐）
+python3 -m venv venv
+source venv/bin/activate
+pip install pytest pyyaml
 ```
 
-## 提交规范
+---
 
-### Commit 消息格式
+## 开发规范
 
-```
-<type>: <subject>
+### Python代码规范
 
-<body>
-```
+- 使用 **snake_case** 命名函数和变量
+- 使用 **PascalCase** 命名类
+- 使用 **UPPER_SNAKE_CASE** 命名常量
+- 必须包含 **docstring**（使用Google风格）
+- 单行不超过 **120字符**
 
-### Type 类型
-
-- `feat`: 新功能
-- `fix`: 修复 Bug
-- `docs`: 文档更新
-- `style`: 代码格式
-- `refactor`: 重构
-- `test`: 测试
-- `chore`: 构建/工具
-
-### 示例
+### 提交规范
 
 ```
-feat: 添加新的自愈策略
-
-- 实现超时自动恢复
-- 添加内存清理机制
-- 更新测试用例
-
-Closes #123
+feat: 新功能
+fix: 修复bug
+docs: 文档更新
+style: 代码格式（不影响功能）
+refactor: 重构
+test: 测试相关
+chore: 构建/工具
 ```
 
-## 问题解答
+### 分支管理
 
-如有问题，请提交 Issue 或联系维护者。
+- `main` - 主分支，稳定版本
+- `develop` - 开发分支
+- `feature/*` - 功能分支
+- `fix/*` - 修复分支
+
+---
+
+## 测试
+
+```bash
+# 运行所有测试
+python3 -m pytest tests/ -v
+
+# 运行单个测试文件
+python3 -m pytest tests/test_pangu.py::TestShannonEntropy -v
+
+# 带覆盖率
+python3 -m pytest tests/ --cov=. --cov-report=html
+```
+
+---
+
+## Pull Request流程
+
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'feat: 添加某功能'`)
+4. 推送分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
+
+---
+
+## 问题反馈
+
+请通过 GitHub Issues 反馈问题。
+
+---
+
+感谢您的贡献！

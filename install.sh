@@ -1,38 +1,59 @@
 #!/bin/bash
-# LLM-ΔG-AntiHallucination 安装脚本
+# install.sh - 盘古安装脚本
 
 set -e
 
-echo "========================================"
-echo "LLM-ΔG-AntiHallucination 安装程序"
-echo "========================================"
+echo "============================================"
+echo "  盘古 Pangu - LLM防幻觉框架安装"
+echo "============================================"
+echo ""
 
 # 检查Python版本
-python_version=$(python3 --version 2>&1 | awk '{print $2}')
-echo "检测到 Python 版本: $python_version"
+python_version=$(python3 --version 2>&1 | cut -d' ' -f2 | cut -d'.' -f1,2)
+required_version="3.8"
+
+if [ $(echo -e "$python_version\n$required_version" | sort -V | head -n1) != "$required_version" ]; then
+    echo "❌ Python版本过低: $python_version (需要 >= 3.8)"
+    exit 1
+fi
+echo "✅ Python版本: $python_version"
+
+# 创建目录
+echo ""
+echo "📁 创建目录结构..."
+mkdir -p storage/backups
+mkdir -p storage/skills
+mkdir -p baseline-v1
+mkdir -p examples
+echo "✅ 目录创建完成"
 
 # 安装依赖
 echo ""
-echo "[1/3] 安装 Python 依赖..."
-pip install pyyaml requests --quiet
+echo "📦 安装Python依赖..."
+pip install pytest pyyaml --quiet
 
-# 验证安装
+# 初始化存储
 echo ""
-echo "[2/3] 验证安装..."
-python3 -c "import yaml; import requests; print('依赖验证通过')"
+echo "💾 初始化存储..."
+if [ ! -f "storage/pangu_memory.json" ]; then
+    echo '{"_meta": {"version": 1, "last_updated": ""}, "long_term": {}, "short_term": []}' > storage/pangu_memory.json
+    echo "✅ 记忆文件创建完成"
+fi
 
-# 运行初始化
+# 运行测试
 echo ""
-echo "[3/3] 运行初始化检查..."
-python3 run_init.py
+echo "🧪 运行测试..."
+python3 -m pytest tests/ -v --tb=short || echo "⚠️ 部分测试可能失败，请检查"
 
+# 完成
 echo ""
-echo "========================================"
-echo "安装完成!"
-echo "========================================"
+echo "============================================"
+echo "  🎉 盘古安装完成！"
+echo "============================================"
 echo ""
-echo "使用方法:"
-echo "  python run_init.py          # 运行初始化"
-echo "  pytest tests/ -v            # 运行测试"
-echo "  python -c 'from core.delta_g_formula import *; print(quick_calc(2.0, 0.9, 100))'"
+echo "快速开始："
+echo "  python3 run_init.py"
+echo ""
+echo "运行测试："
+echo "  python3 -m pytest tests/ -v"
 echo ""

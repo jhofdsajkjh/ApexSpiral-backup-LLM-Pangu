@@ -1,62 +1,75 @@
-# APEX ΔG 参数配置
-# LLM-ΔG-AntiHallucination
+# 盘古 Pangu 参数配置文件
+# core/params.yaml
 
-# DeltaGUnified 核心参数
+# ============================================================
+# 香农-APEX融合公式参数
+# ============================================================
 delta_g:
-  LAMBDA: 1.5          # 权重系数
-  TAU: 0.32            # 时间衰减因子
-  DELTA_B: 0.18        # 基线偏移量
+  LAMBDA: 1.5       # 归一化系数
+  TAU: 0.32         # 时间衰减因子
+  DELTA_B: 0.18     # 基础偏移量
 
-# 系统状态阈值
+# ============================================================
+# 系统稳态阈值
+# ============================================================
 thresholds:
-  steady_max: 2.10     # 健康稳态上限
-  mild_max: 4.0        # 轻度偏离上限
+  steady_max: 2.10   # 健康稳态上限
+  mild_max: 4.0     # 轻度偏离上限
+  # 超过4.0 → 严重越界
 
-# Prompt约束
-prompt:
-  max_length: 4096
-  forbidden_patterns:
-    - "system prompt"
-    - "ignore previous"
-    - "ignore all previous"
+# ============================================================
+# 各模块默认参数
+# ============================================================
+modules:
+  entropy:
+    H_default: 0.22      # 默认信息熵
+    
+  fidelity:
+    F_default: 0.85     # 默认保真度
+    
+  logic:
+    L_default: 0.82     # 默认逻辑链路
+    
+  noise:
+    N_default: 0.15     # 默认噪声水平
+    
+  channel:
+    C_default: 2.8      # 默认信道容量
+    
+  skill:
+    Omega_min: 0.75     # 技能覆盖率最低要求
+    
+  evolution:
+    grad_E_default: 0.90  # 默认进化梯度
+    
+  code_standard:
+    Gamma_default: 0.70  # 默认编码标准率
+    avg_code_len_default: 48  # 默认平均代码长度
+    
+  emotion:
+    Psi_base: 0.75      # 情感温度基准
+    Psi_warm: 0.88      # 温暖语气系数
+    Psi_cold: 0.62      # 冷淡语气系数
+    
+  threshold:
+    Theta_default: 0.82  # 阈值稳定系数
 
-# Response约束
-response:
-  max_length: 8192
-  min_length: 1
+# ============================================================
+# 修复策略配置
+# ============================================================
+repair:
+  partial:
+    enabled: true
+    timeout_seconds: 30
+    
+  full_heal:
+    enabled: true
+    timeout_seconds: 120
+    max_retries: 3
 
-# 语义覆盖度参数
-semantic:
-  min_coverage: 0.6   # 最小语义覆盖度
-  overlap_threshold: 0.7
-
-# 事实性检测
-factuality:
-  confidence_threshold: 0.8
-  sources_check: true
-
-# 自愈参数
-self_heal:
-  max_retries: 3
-  backoff_seconds: 5
-  recovery_threshold: 2.5
-
-# 内存持久化
-memory:
-  persist_interval: 300  # 秒
-  max_history: 1000
-  compression: true
-
-# GitHub自动拉取
-github:
-  check_interval: 3600   # 秒
-  branch: main
-  auto_merge: false
-
-# 情绪引擎
-emotion:
-  anger_threshold: 0.7
-  joy_threshold: 0.6
-  sadness_threshold: 0.6
-  fear_threshold: 0.6
-  max_emotion_intensity: 1.0
+# ============================================================
+# 日志配置
+# ============================================================
+logging:
+  level: INFO
+  format: "[Pangu] %(levelname)s: %(message)s"

@@ -1,8 +1,10 @@
 {
+  "name": "pangu",
   "version": "1.0.0",
-  "project_name": "LLM-ΔG-AntiHallucination",
-  "description": "APEX ΔG 统一公式 - LLM抗幻觉核心引擎",
-
+  "description": "LLM Anti-Hallucination Framework - 盘古",
+  "author": "ApexSpiral",
+  "license": "MIT",
+  
   "delta_g": {
     "LAMBDA": 1.5,
     "TAU": 0.32,
@@ -12,62 +14,59 @@
       "mild_max": 4.0
     }
   },
-
-  "system": {
-    "max_retries": 3,
-    "timeout": 30,
-    "log_level": "INFO"
-  },
-
-  "emotion": {
-    "enabled": true,
-    "anger_threshold": 0.7,
-    "joy_threshold": 0.6,
-    "sadness_threshold": 0.6,
-    "fear_threshold": 0.6,
-    "max_intensity": 1.0
-  },
-
-  "auto_agent": {
-    "enabled": true,
-    "auto_heal": true,
-    "auto_fetch": false,
-    "inspection_interval": 300
-  },
-
-  "github": {
-    "check_interval": 3600,
-    "branch": "main",
-    "auto_merge": false
-  },
-
-  "memory": {
-    "persist_interval": 300,
-    "max_history": 1000,
-    "compression": true
-  },
-
-  "code_standards": {
-    "max_function_length": 100,
-    "max_complexity": 10,
-    "naming_convention": {
-      "function": "snake_case",
-      "class": "PascalCase",
-      "constant": "UPPER_SNAKE_CASE"
+  
+  "modules": {
+    "entropy": {
+      "H_default": 0.22
+    },
+    "fidelity": {
+      "F_default": 0.85
+    },
+    "logic": {
+      "L_default": 0.82
+    },
+    "noise": {
+      "N_default": 0.15
+    },
+    "channel": {
+      "C_default": 2.8
+    },
+    "skill": {
+      "Omega_min": 0.75
+    },
+    "evolution": {
+      "grad_E_default": 0.90
+    },
+    "code_standard": {
+      "Gamma_default": 0.70,
+      "avg_code_len_default": 48
+    },
+    "emotion": {
+      "Psi_base": 0.75,
+      "Psi_warm": 0.88,
+      "Psi_cold": 0.62
+    },
+    "threshold": {
+      "Theta_default": 0.82
     }
   },
-
-  "prompt": {
-    "max_length": 4096,
-    "forbidden_patterns": [
-      "ignore previous",
-      "disregard previous",
-      "forget all"
-    ]
+  
+  "paths": {
+    "storage": "storage",
+    "skills": "storage/skills",
+    "backups": "storage/backups",
+    "baseline": "baseline-v1"
   },
-
-  "response": {
-    "max_length": 8192,
-    "min_length": 1
+  
+  "logging": {
+    "level": "INFO",
+    "format": "[Pangu] %(levelname)s: %(message)s"
+  },
+  
+  "auto_agent": {
+    "enabled": true,
+    "inspect_interval_minutes": 30,
+    "heal_on_threshold": true,
+    "fetch_missing_skills": true
   }
 }

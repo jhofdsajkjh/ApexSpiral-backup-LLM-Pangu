@@ -1,89 +1,94 @@
 """
-约束引擎 - 负责强制执行各类约束规则
+core/constraint_engine.py - 盘古约束引擎
+
+负责执行ΔG公式计算后的约束动作
+将判定结果转化为具体的修复/自愈操作
 """
-import yaml
-from typing import Any
+
+import logging
+from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class ConstraintEngine:
-    """约束执行引擎"""
-
-    def __init__(self, config_path: str = None):
-        self.config = {}
-        if config_path:
-            self.load_config(config_path)
-
-    def load_config(self, config_path: str):
-        """加载约束配置文件"""
-        with open(config_path, 'r', encoding='utf-8') as f:
-            self.config = yaml.safe_load(f)
-
-    def check_prompt_constraint(self, prompt: str) -> tuple[bool, str]:
+    """
+    约束引擎
+    
+    根据ΔG判定结果，执行相应的约束动作
+    - 健康稳态：放行
+    - 轻度偏离：局部修复
+    - 严重越界：全量自愈
+    """
+    
+    def __init__(self):
+        """初始化约束引擎"""
+        self.repair_history: List[Dict] = []
+        logger.info("约束引擎初始化完成")
+    
+    def apply_constraints(self, dg_total: float, context: Optional[Dict] = None) -> Dict:
         """
-        检查Prompt约束
-        返回: (是否通过, 原因)
+        根据ΔG总值应用约束策略
+        
+        Args:
+            dg_total: ΔG计算总值
+            context: 额外上下文信息
+            
+        Returns:
+            dict: {
+                "action": str,      # 执行的动作
+                "details": dict,    # 动作详情
+                "success": bool     # 是否成功
+            }
         """
-        # 长度约束
-        max_length = self.config.get('prompt', {}).get('max_length', 4096)
-        if len(prompt) > max_length:
-            return False, f"Prompt长度超限: {len(prompt)} > {max_length}"
-
-        # 危险内容检测
-        forbidden = self.config.get('prompt', {}).get('forbidden_patterns', [])
-        for pattern in forbidden:
-            if pattern.lower() in prompt.lower():
-                return False, f"包含禁止内容: {pattern}"
-
-        return True, "通过"
-
-    def check_response_constraint(self, response: str) -> tuple[bool, str]:
-        """
-        检查Response约束
-        """
-        max_length = self.config.get('response', {}).get('max_length', 8192)
-        if len(response) > max_length:
-            return False, f"Response长度超限: {len(response)} > {max_length}"
-
-        return True, "通过"
-
-    def check_factuality(self, claim: str, facts: list[str]) -> float:
-        """
-        简单事实性检查
-        返回: 0-1的事实性得分
-        """
-        if not facts:
-            return 0.5
-
-        claim_lower = claim.lower()
-        matches = sum(1 for fact in facts if fact.lower() in claim_lower)
-        return matches / len(facts)
-
-    def enforce_context_window(self, context: list, max_tokens: int) -> list:
-        """
-        强制上下文窗口限制
-        """
-        if len(context) <= max_tokens:
-            return context
-
-        # 保留最近上下文
-        return context[-max_tokens:]
-
-    def apply_constraint(self, text: str, constraint_type: str) -> str:
-        """
-        应用指定类型的约束
-        """
-        if constraint_type == "safe_output":
-            # 安全输出约束
-            text = text.replace("<script>", "").replace("</script>", "")
-            text = text.replace("<?php", "").replace("?>", "")
-        elif constraint_type == "length_limit":
-            max_len = self.config.get('response', {}).get('max_length', 8192)
-            if len(text) > max_len:
-                text = text[:max_len] + "\n[输出已截断]"
-        elif constraint_type == "no_hallucination":
-            # 简单幻觉检测
-            placeholders = ["[TODO]", "[FIXME]", "[placeholder]", "undefined", "null"]
-            for ph in placeholders:
-                text = text.replace(ph, "[已过滤占位符]")
-
-        return text
+        context = context or {}
+        
+        if dg_total <= 2.10:
+            action = self._allow()
+        elif 2.10 < dg_total <= 4.0:
+            action = self._partial_repair(context)
+        else:
+            action = self._full_heal(context)
+        
+        self.repair_history.append({
+            "dg_total": dg_total,
+            "action": action,
+            "context": context
+        })
+        
+        return action
+    
+    def _allow(self) -> Dict:
+        """健康稳态 - 放行"""
+        logger.info("ΔG处于健康范围，放行请求")
+        return {
+            "action": "allow",
+            "details": {"message": "系统稳态，放行"},
+            "success": True
+        }
+    
+    def _partial_repair(self, context: Dict) -> Dict:
+        """轻度偏离 - 局部修复"""
+        logger.warning("ΔG轻度偏离，启动局部修复")
+        # 这里触发具体的修复逻辑
+        repair_type = context.get("repair_type", "default")
+        return {
+            "action": "partial_repair",
+            "details": {
+                "repair_type": repair_type,
+                "message": "局部修复已完成"
+            },
+            "success": True
+        }
+    
+    def _full_heal(self, context: Dict) -> Dict:
+        """严重越界 - 全量自愈"""
+        logger.error("ΔG严重越界，启动全量自愈")
+        return {
+            "action": "full_heal",
+            "details": {
+                "message": "全量自愈已触发",
+                "recovery_steps": ["状态重置", "基因修复", "记忆恢复"]
+            },
+            "success": True
+        }

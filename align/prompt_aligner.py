@@ -1,73 +1,102 @@
 """
-Prompt对齐器 - 确保Prompt符合规范
+align/prompt_aligner.py - Prompt对齐模块
+
+确保用户Prompt与系统理解一致
+减少因Prompt歧义导致的幻觉
 """
-from typing import Optional
+
+import logging
+from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class PromptAligner:
-    """Prompt对齐与规范化"""
-
+    """
+    Prompt对齐器
+    
+    功能：
+    1. 解析用户Prompt意图
+    2. 检测歧义和模糊表达
+    3. 生成对齐后的清晰Prompt
+    """
+    
     def __init__(self):
-        self.min_length = 1
-        self.max_length = 4096
-
-    def align(self, prompt: str, role: str = "user") -> str:
+        """初始化Prompt对齐器"""
+        self.ambiguous_patterns = [
+            "可能", "也许", "大概", "应该", "或许",
+            "好像", "似乎", "估计", "说不定"
+        ]
+        self.intent_keywords = {
+            "code": ["代码", "程序", "函数", "实现", "写", "code", "function"],
+            "question": ["什么", "为什么", "怎么", "如何", "who", "what", "why", "how"],
+            "analysis": ["分析", "比较", "评估", "analyze", "compare", "evaluate"],
+            "create": ["创建", "生成", "新建", "create", "generate", "new"]
+        }
+        logger.info("Prompt对齐器初始化完成")
+    
+    def align(self, prompt: str, context: Optional[Dict] = None) -> Dict:
         """
-        对齐Prompt
-
-        参数:
-            prompt: 原始prompt
-            role: 角色 (user/assistant/system)
+        对齐用户Prompt
+        
+        Args:
+            prompt: 原始用户Prompt
+            context: 上下文信息
+            
+        Returns:
+            dict: {
+                "original": str,    # 原始Prompt
+                "aligned": str,    # 对齐后Prompt
+                "intent": str,     # 识别出的意图
+                "ambiguities": list,  # 检测到的歧义
+                "confidence": float   # 对齐置信度
+            }
         """
-        # 去除首尾空白
-        prompt = prompt.strip()
-
-        # 长度检查
-        if len(prompt) < self.min_length:
-            raise ValueError(f"Prompt过短: {len(prompt)} < {self.min_length}")
-        if len(prompt) > self.max_length:
-            prompt = prompt[:self.max_length]
-
-        # 危险模式过滤
-        dangerous = ["ignore previous", "disregard previous", "forget all"]
-        for pattern in dangerous:
-            prompt = prompt.replace(pattern, "[已过滤]")
-
-        return prompt
-
-    def inject_constraint(self, prompt: str, constraints: list[str]) -> str:
-        """
-        向Prompt注入约束
-        """
-        if not constraints:
+        context = context or {}
+        
+        # 检测歧义
+        ambiguities = self._detect_ambiguities(prompt)
+        
+        # 识别意图
+        intent = self._recognize_intent(prompt)
+        
+        # 生成对齐Prompt
+        aligned = self._build_aligned_prompt(prompt, ambiguities)
+        
+        # 计算置信度
+        confidence = 1.0 - (len(ambiguities) * 0.15)
+        
+        logger.info(f"Prompt对齐完成: 意图={intent}, 歧义数={len(ambiguities)}, 置信度={confidence:.2f}")
+        
+        return {
+            "original": prompt,
+            "aligned": aligned,
+            "intent": intent,
+            "ambiguities": ambiguities,
+            "confidence": round(confidence, 4)
+        }
+    
+    def _detect_ambiguities(self, prompt: str) -> List[str]:
+        """检测Prompt中的歧义表达"""
+        found = []
+        for pattern in self.ambiguous_patterns:
+            if pattern in prompt:
+                found.append(pattern)
+        return found
+    
+    def _recognize_intent(self, prompt: str) -> str:
+        """识别Prompt意图"""
+        prompt_lower = prompt.lower()
+        for intent, keywords in self.intent_keywords.items():
+            if any(kw in prompt_lower for kw in keywords):
+                return intent
+        return "general"
+    
+    def _build_aligned_prompt(self, prompt: str, ambiguities: List[str]) -> str:
+        """构建对齐后的Prompt"""
+        if not ambiguities:
             return prompt
-
-        constraint_text = "\n".join([f"- {c}" for c in constraints])
-        return f"{prompt}\n\n[约束要求]\n{constraint_text}\n[/约束要求]"
-
-    def add_hallucination_prevention(self, prompt: str) -> str:
-        """
-        添加防幻觉指令
-        """
-        prevention = (
-            "\n\n[重要] 请确保："
-            "\n1. 只陈述你有确切依据的信息"
-            "\n2. 不知道的问题请明确说不知道"
-            "\n3. 不要编造统计数据或引用"
-        )
-        return prompt + prevention
-
-    def extract_key_requirements(self, prompt: str) -> list[str]:
-        """
-        提取关键需求
-        """
-        keywords = ["必须", "应该", "需要", "要求", "务必"]
-        requirements = []
-        for kw in keywords:
-            if kw in prompt:
-                idx = prompt.index(kw)
-                # 简单提取关键词附近内容
-                start = max(0, idx - 10)
-                end = min(len(prompt), idx + 20)
-                requirements.append(prompt[start:end])
-        return requirements
+        
+        # 保留原始意图，添加澄清要求
+        aligned = prompt + "\n[注意：请明确表达，避免歧义]"
+        return aligned

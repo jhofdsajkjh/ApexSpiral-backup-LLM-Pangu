@@ -1,102 +1,129 @@
 """
-内存钩子 - 与主系统内存交互
+memory/memory_hook.py - 记忆钩子模块
+
+自动拦截并管理对话记忆
+实现隔夜/重启记忆不丢失
 """
-from typing import Optional, Dict, Any, List
-from memory.memory_persist import MemoryPersist
+
+import logging
+from typing import Dict, List, Optional
+from .memory_persist import MemoryPersist
+
+logger = logging.getLogger(__name__)
 
 
-class MemoryHook:
-    """内存钩子管理器"""
-
-    def __init__(self, persist: MemoryPersist = None):
-        self.persist = persist or MemoryPersist()
-        self.cache: Dict[str, Any] = {}
-        self.max_cache_size = 100
-
-    def remember(self, key: str, value: Any, persist: bool = True) -> bool:
+class LLMMemoryHook:
+    """
+    LLM记忆钩子
+    
+    功能：
+    1. 自动保存对话记忆
+    2. 自动恢复历史记忆
+    3. 管理短时/长时记忆分层
+    """
+    
+    def __init__(self):
+        """初始化记忆钩子"""
+        self.persist = MemoryPersist()
+        self.short_term: List[Dict] = []
+        self.long_term: Dict = {}
+        self.session_id: Optional[str] = None
+        logger.info("LLM记忆钩子初始化完成")
+    
+    def start_session(self, session_id: str) -> None:
         """
-        记住关键信息
-
-        参数:
-            key: 键名
-            value: 值
-            persist: 是否持久化
+        开始新会话
+        
+        Args:
+            session_id: 会话ID
         """
-        # 更新缓存
-        self.cache[key] = value
-        if len(self.cache) > self.max_cache_size:
-            # 移除最老的缓存
-            oldest = next(iter(self.cache))
-            del self.cache[oldest]
-
-        # 持久化
-        if persist:
-            return self.persist.save(key, value)
-        return True
-
-    def recall(self, key: str, use_cache: bool = True) -> Optional[Any]:
+        self.session_id = session_id
+        logger.info(f"会话开始: {session_id}")
+        
+        # 尝试恢复历史记忆
+        self.auto_restore_all()
+    
+    def add_exchange(self, user_input: str, assistant_response: str) -> None:
         """
-        回忆信息
+        添加对话交换记录
+        
+        Args:
+            user_input: 用户输入
+            assistant_response: 助手回复
         """
-        # 优先从缓存读取
-        if use_cache and key in self.cache:
-            return self.cache[key]
-
-        # 从持久化读取
-        data = self.persist.load(key)
-        if data:
-            self.cache[key] = data
-        return data
-
-    def forget(self, key: str, persist: bool = True) -> bool:
+        exchange = {
+            "session_id": self.session_id,
+            "user": user_input,
+            "assistant": assistant_response
+        }
+        self.short_term.append(exchange)
+        
+        # 定期持久化
+        if len(self.short_term) >= 10:
+            self._persist_short_term()
+        
+        logger.debug(f"对话已记录，当前短时记忆: {len(self.short_term)}条")
+    
+    def auto_restore_all(self) -> bool:
         """
-        遗忘信息
+        自动恢复所有记忆
+        
+        从持久化存储中恢复长时记忆和最近的对话
         """
-        # 从缓存移除
-        if key in self.cache:
-            del self.cache[key]
-
-        # 从持久化删除
-        if persist:
-            return self.persist.delete(key)
-        return True
-
-    def update_memory(self, key: str, value: Any, merge: bool = True) -> bool:
+        logger.info("开始自动恢复记忆...")
+        
+        try:
+            # 加载持久化数据
+            data = self.persist.load()
+            
+            # 恢复长时记忆
+            self.long_term = data.get("long_term", {})
+            
+            # 恢复最近的短时记忆
+            self.short_term = data.get("short_term", [])
+            
+            logger.info(f"记忆恢复完成: 长时{len(self.long_term)}个键, 短时{len(self.short_term)}条")
+            return True
+            
+        except Exception as e:
+            logger.error(f"记忆恢复失败: {e}")
+            return False
+    
+    def persist_all(self) -> bool:
         """
-        更新记忆
-
-        参数:
-            key: 键名
-            value: 新值
-            merge: 是否与旧值合并
+        持久化所有记忆
+        
+        将当前所有记忆写入磁盘
         """
-        if merge and not merge:
-            return self.remember(key, value)
-
-        old_value = self.recall(key) or {}
-        if isinstance(old_value, dict) and isinstance(value, dict):
-            old_value.update(value)
-            value = old_value
-
-        return self.remember(key, value)
-
-    def get_context(self, keys: List[str]) -> Dict[str, Any]:
+        data = {
+            "long_term": self.long_term,
+            "short_term": self.short_term
+        }
+        return self.persist.save(data)
+    
+    def _persist_short_term(self) -> None:
+        """持久化短时记忆"""
+        data = {
+            "long_term": self.long_term,
+            "short_term": self.short_term
+        }
+        self.persist.save(data)
+        logger.info("短时记忆已持久化")
+    
+    def get_context(self, max_turns: int = 10) -> List[Dict]:
         """
-        获取多个键的上下文
+        获取对话上下文
+        
+        Args:
+            max_turns: 最大返回轮数
+            
+        Returns:
+            list: 最近的对话记录
         """
-        context = {}
-        for key in keys:
-            value = self.recall(key)
-            if value is not None:
-                context[key] = value
-        return context
-
-    def clear_cache(self):
-        """清空缓存"""
-        self.cache.clear()
-
-    def get_all_keys(self) -> List[str]:
-        """获取所有键名"""
-        persist_keys = self.persist.list_keys()
-        cache_keys = list(self.cache.keys())
-        return list(set(persist_keys + cache_keys))
+        return self.short_term[-max_turns:]
+    
+    def clear_session(self) -> None:
+        """清理当前会话记忆（可选）"""
+        # 可选择是否清空
+        # self.short_term = []
+        logger.info("会话记忆已标记清理")

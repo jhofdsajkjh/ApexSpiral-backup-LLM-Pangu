@@ -1,170 +1,147 @@
 """
-EmotionCore - 情绪核心引擎
-负责检测、追踪和响应用户情绪状态
+emotion/emotion_core.py - 情感温度核心模块
+
+为对话注入拟人化情感温度
+脱离机械冰冷的回复风格
 """
-import math
-from typing import Dict, Optional, List
-from datetime import datetime
+
+import logging
+from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class EmotionCore:
-    """情绪核心引擎 - APEX情绪感知层"""
-
-    # 情绪维度定义
-    EMOTION_DIMENSIONS = ['valence', 'arousal', 'dominance']
-
-    # 基础情绪类型
-    BASE_EMOTIONS = {
-        'joy': {'vector': [0.9, 0.7, 0.8], 'icon': '😊'},
-        'sadness': {'vector': [0.2, 0.4, 0.3], 'icon': '😢'},
-        'anger': {'vector': [0.1, 0.9, 0.7], 'icon': '😠'},
-        'fear': {'vector': [0.15, 0.85, 0.2], 'icon': '😨'},
-        'surprise': {'vector': [0.7, 0.8, 0.5], 'icon': '😮'},
-        'disgust': {'vector': [0.1, 0.6, 0.4], 'icon': '😒'},
-        'neutral': {'vector': [0.5, 0.5, 0.5], 'icon': '😐'},
-    }
-
+    """
+    情感温度核心
+    
+    功能：
+    1. 计算情感系数Ψ
+    2. 识别用户语气
+    3. 注入情感温度
+    """
+    
     def __init__(self):
-        self.current_emotion: Dict = self.BASE_EMOTIONS['neutral'].copy()
-        self.emotion_history: List[Dict] = []
-        self.max_history = 100
-        self.intensity_threshold = 0.6
-
-    def detect_emotion(self, text: str, context: Dict = None) -> Dict:
+        """初始化情感温度核心"""
+        self.PSI_BASE = 0.75      # 基准情感系数
+        self.PSI_WARM = 0.88     # 温暖语气系数
+        self.PSI_COLD = 0.62     # 冷淡语气系数
+        
+        # 软化词库
+        self.soft_words = [
+            "理解", "没关系", "我帮你梳理", "我明白你的意思",
+            "我们一起来解决", "好的", "没问题", "别担心",
+            "明白了", "了解了", "完全懂你", "为你服务"
+        ]
+        
+        # 温暖前缀
+        self.warm_prefixes = [
+            "😊 我理解你的需求，",
+            "😊 没问题，",
+            "😊 明白了，我来帮你，",
+            "🤗 别着急，"
+        ]
+        
+        # 冷淡前缀（用于纠正错误）
+        self.cold_prefixes = [
+            "📌 收到指令，",
+            "⚠️ 注意，",
+            "🔧 正在处理，"
+        ]
+        
+        logger.info("情感温度核心初始化完成")
+    
+    def calc_psi(self, user_tone: str = "normal") -> float:
         """
-        从文本中检测情绪
-
-        参数:
-            text: 输入文本
-            context: 额外上下文信息
-
-        返回:
-            情绪分析结果，包含主情绪、强度和子情绪
+        动态计算情感系数Ψ
+        
+        Args:
+            user_tone: 用户语气 (warm/normal/cold)
+            
+        Returns:
+            float: 情感系数Ψ，范围[0,1]
+        """
+        if user_tone == "warm":
+            psi = self.PSI_WARM
+        elif user_tone == "cold":
+            psi = self.PSI_COLD
+        else:
+            psi = self.PSI_BASE
+        
+        logger.debug(f"情感系数计算: user_tone={user_tone}, psi={psi}")
+        return psi
+    
+    def detect_user_tone(self, text: str) -> str:
+        """
+        检测用户语气
+        
+        Args:
+            text: 用户输入文本
+            
+        Returns:
+            str: 语气类型 (warm/normal/cold)
         """
         text_lower = text.lower()
-
-        # 关键词情绪映射
-        emotion_keywords = {
-            'joy': ['开心', '高兴', '快乐', '棒', '太好了', 'good', 'great', 'happy', 'joy', 'wonderful', '太好了', '完美', '赞'],
-            'sadness': ['难过', '伤心', '悲伤', '失落', '沮丧', 'sad', 'unhappy', 'depressed', '难过', '可惜'],
-            'anger': ['生气', '愤怒', '恼火', '讨厌', '烦', 'angry', 'mad', 'hate', 'furious', '可恶'],
-            'fear': ['害怕', '担心', '紧张', '恐惧', '不安', 'fear', 'scared', 'worried', 'anxious', '慌'],
-            'surprise': ['惊讶', '意外', '震惊', '没想到', 'surprise', 'amazing', 'shocked', '惊讶'],
-            'disgust': ['恶心', '讨厌', '厌恶', '反感', 'disgust', 'gross', '讨厌', '嫌弃'],
-        }
-
-        scores = {}
-        for emotion, keywords in emotion_keywords.items():
-            score = sum(1 for kw in keywords if kw in text_lower)
-            if score > 0:
-                scores[emotion] = min(score / len(keywords), 1.0)
-
-        if not scores:
-            return self._build_response('neutral', 0.3)
-
-        # 找最高分情绪
-        primary = max(scores, key=scores.get)
-        intensity = scores[primary]
-
-        return self._build_response(primary, intensity)
-
-    def _build_response(self, emotion: str, intensity: float) -> Dict:
-        """构建情绪响应"""
-        response = {
-            'emotion': emotion,
-            'intensity': intensity,
-            'icon': self.BASE_EMOTIONS.get(emotion, {}).get('icon', '😐'),
-            'vector': self.BASE_EMOTIONS.get(emotion, {}).get('vector', [0.5, 0.5, 0.5]),
-            'timestamp': datetime.now().isoformat()
-        }
-
-        # 更新当前情绪
-        if intensity >= self.intensity_threshold:
-            self.current_emotion = response.copy()
-            self._add_to_history(response)
-
-        return response
-
-    def _add_to_history(self, emotion_data: Dict):
-        """添加到历史记录"""
-        self.emotion_history.append(emotion_data)
-        if len(self.emotion_history) > self.max_history:
-            self.emotion_history.pop(0)
-
-    def get_current_emotion(self) -> Dict:
-        """获取当前情绪状态"""
-        return self.current_emotion.copy()
-
-    def get_emotion_history(self, limit: int = 10) -> List[Dict]:
-        """获取情绪历史"""
-        return self.emotion_history[-limit:]
-
-    def calculate_emotion_distance(self, e1: Dict, e2: Dict) -> float:
+        
+        # 温暖语气关键词
+        warm_keywords = ["谢谢", "好", "棒", "厉害", "喜欢", "赞", "感谢"]
+        for kw in warm_keywords:
+            if kw in text_lower:
+                return "warm"
+        
+        # 冷淡语气关键词
+        cold_keywords = ["不对", "错", "不行", "不是", "不满意", "投诉"]
+        for kw in cold_keywords:
+            if kw in text_lower:
+                return "cold"
+        
+        return "normal"
+    
+    def inject_tone(self, resp_text: str, psi: float) -> str:
         """
-        计算两个情绪向量之间的欧几里得距离
+        给回复注入温度语气
+        
+        Args:
+            resp_text: 原始回复文本
+            resp_text: 情感系数
+            
+        Returns:
+            str: 注入情感温度后的回复
         """
-        v1 = e1.get('vector', [0.5, 0.5, 0.5])
-        v2 = e2.get('vector', [0.5, 0.5, 0.5])
-
-        distance = math.sqrt(sum((a - b) ** 2 for a, b in zip(v1, v2)))
-        return round(distance, 4)
-
-    def is_emotion_shifted(self, threshold: float = 0.3) -> bool:
+        if psi >= 0.8:
+            # 温暖语气
+            import random
+            prefix = random.choice(self.warm_prefixes)
+            resp_text = prefix + resp_text
+        elif psi <= 0.65:
+            # 冷淡语气（更正式）
+            import random
+            prefix = random.choice(self.cold_prefixes)
+            resp_text = prefix + resp_text
+        
+        return resp_text
+    
+    def add_soft_words(self, text: str, ratio: float = 0.3) -> str:
         """
-        检测情绪是否发生显著变化
+        按比例在回复中插入软化词
+        
+        Args:
+            text: 原始文本
+            ratio: 插入比例 (0~1)
+            
+        Returns:
+            str: 添加软化词后的文本
         """
-        if len(self.emotion_history) < 2:
-            return False
-
-        recent = self.emotion_history[-1]
-        previous = self.emotion_history[-2]
-
-        distance = self.calculate_emotion_distance(recent, previous)
-        return distance > threshold
-
-    def should_adjust_response(self) -> bool:
-        """
-        判断是否需要调整响应策略
-        """
-        current_intensity = self.current_emotion.get('intensity', 0)
-
-        # 高强度负面情绪需要调整
-        if current_intensity > 0.8:
-            emotion = self.current_emotion.get('emotion', 'neutral')
-            if emotion in ['anger', 'fear', 'sadness']:
-                return True
-
-        return False
-
-    def generate_emotion_summary(self) -> str:
-        """生成情绪摘要"""
-        if not self.emotion_history:
-            return "暂无情绪记录"
-
-        recent = self.emotion_history[-1]
-        emotion = recent['emotion']
-        intensity = recent['intensity']
-
-        if intensity < 0.3:
-            return f"当前情绪平稳 ({emotion})"
-        elif intensity < 0.6:
-            return f"情绪略有波动 ({emotion})"
-        else:
-            return f"情绪波动明显 ({emotion}, 强度: {intensity:.1%})"
-
-
-if __name__ == "__main__":
-    engine = EmotionCore()
-
-    test_texts = [
-        "今天太开心了！",
-        "这个问题让我很担心",
-        "简直是在开玩笑！",
-        "无所谓，随便吧",
-    ]
-
-    for text in test_texts:
-        result = engine.detect_emotion(text)
-        print(f"文本: {text}")
-        print(f"情绪: {result['emotion']} {result['icon']}, 强度: {result['intensity']:.2f}")
-        print()
+        import random
+        
+        words = text.split()
+        if len(words) < 3:
+            return text
+        
+        insert_count = max(1, int(len(words) * ratio))
+        insert_positions = random.sample(range(1, len(words)), min(insert_count, len(words)-1))
+        
+        for pos in sorted(insert_positions):
+            words.insert(pos, random.choice(self.soft_words))
+        
+        return ' '.join(words)

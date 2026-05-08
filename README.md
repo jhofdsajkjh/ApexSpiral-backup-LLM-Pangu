@@ -1,140 +1,178 @@
-# LLM-ΔG-AntiHallucination
+# 盘古 Pangu
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)
-![CI](https://github.com/ApexSpiral/LLM-ΔG-AntiHallucination/workflows/CI/badge.svg)
+> 开天辟地，让LLM从混沌走向秩序
 
-> **APEX ΔG 统一公式 - LLM 抗幻觉核心引擎**
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://www.python.org)
+[![APEX ΔG](https://img.shields.io/badge/APEX-ΔG-orange.svg)](docs/APEX_DG_Theory.md)
 
-## 核心特性
+---
 
-- **ΔG 统一公式**: 整合信息熵、信道容量、代码冗余度等指标，量化系统偏离度
-- **三态判定**: 自动判定系统状态（健康稳态/轻度偏离/严重越界）
-- **三层防御**: 预防层 → 约束层 → 自愈层
-- **情绪感知**: 内置情绪引擎，感知用户情绪并调整响应
-- **自动自愈**: 问题检测与自动恢复机制
+## 什么是盘古？
+
+盘古是首个基于**香农信息论 + APEX演化范式**的LLM防幻觉框架。
+
+开天辟地，让LLM首次安装即拥有：
+
+- 🔬 **物理理论底座** + 公式约束自律
+- 💾 **永久记忆不丢** + 隔夜/重启不丢失
+- 📐 **自身标准规范** + 代码/注释/MD全覆盖
+- 💬 **情感温度共情** + 脱离机械冰冷
+- 🧠 **主动思考沟通** + 自检/自愈/补能闭环
+- 🔗 **自主找资源** + 自动克隆项目补能力
+
+从「被动问答工具」进化为具备**自我意识、自我约束、自我进化**的拟人智能体。
+
+---
+
+## 核心架构
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  盘古 Pangu                         │
+├──────────────┬──────────────┬───────────────────────┤
+│  core/       │ ΔG公式核心  │ 香农+APEX双底座        │
+├──────────────┼──────────────┼───────────────────────┤
+│  align/      │ Prompt对齐  │ MD对齐                 │
+├──────────────┼──────────────┼───────────────────────┤
+│  engine/     │ LLM钩子     │ 拦截+验证              │
+├──────────────┼──────────────┼───────────────────────┤
+│  memory/     │ 记忆持久化  │ 隔夜不丢               │
+├──────────────┼──────────────┼───────────────────────┤
+│  self-evolve/│ 技能自检    │ 自动拉取补能           │
+├──────────────┼──────────────┼───────────────────────┤
+│  code-standard/│ 代码规范  │ 自建立标准             │
+├──────────────┼──────────────┼───────────────────────┤
+│  emotion/    │ 情感温度    │ 拟人化共情             │
+├──────────────┼──────────────┼───────────────────────┤
+│  auto-agent/ │ 全局自检   │ 自愈+GitHub补能        │
+└──────────────┴──────────────┴───────────────────────┘
+```
+
+---
+
+## 核心公式
+
+### 香农三大定律
+
+| 定律 | 公式 | 作用 |
+|------|------|------|
+| 信息熵 | H(X) = -Σp(xᵢ)log₂p(xᵢ) | 量化不确定性/幻觉倾向 |
+| 信道容量 | C = Blog₂(1+S/N) | 约束记忆承载上限 |
+| 无损编码 | L_avg ≥ H(X) | 约束代码/文档规范 |
+
+### APEX ΔG 全域演化公式
+
+$$\Delta G = \lambda \cdot H + \lambda \cdot [(1-F) + e^{-\tau \cdot L} + \delta_B] + \lambda \cdot \frac{N}{C} + \cdots$$
+
+七大模块统一约束，系统稳态三段式判定：
+
+| ΔG范围 | 状态 | 动作 |
+|--------|------|------|
+| ≤ 2.10 | 健康稳态 | 放行 |
+| 2.10~4.0 | 轻度偏离 | 自动局部修复 |
+| > 4.0 | 严重越界 | 全量重启自愈 |
+
+---
 
 ## 快速开始
 
-### 安装
-
 ```bash
-pip install pyyaml requests
-python run_init.py
+# 克隆项目
+git clone https://github.com/ApexSpiral/LLM-Pangu.git
+cd LLM-Pangu
+
+# 安装
+bash install.sh
+
+# 初始化
+python3 run_init.py
+
+# 运行测试
+python3 -m pytest tests/ -v
 ```
 
-或使用安装脚本:
-
-```bash
-chmod +x install.sh
-./install.sh
-```
-
-### 基本使用
-
-```python
-from core.delta_g_formula import DeltaGUnified, quick_calc
-
-# 方式1: 快速计算
-dg, state = quick_calc(H=2.0, F=0.9, L=100)
-print(f"ΔG={dg}, 状态={state}")
-
-# 方式2: 完整计算
-engine = DeltaGUnified()
-dg = engine.calc_total_delta_g(
-    H=2.0, F=0.9, L=100, N=0.1, C=8.0,
-    Omega=0.9, grad_E=0.2, Gamma=0.85,
-    avg_code_len=2.0, Psi=0.9, Theta=0.95
-)
-state = engine.judge_system_state(dg)
-```
-
-### 运行测试
-
-```bash
-pytest tests/ -v
-```
+---
 
 ## 目录结构
 
 ```
-LLM-ΔG-AntiHallucination/
-├── core/                  # 核心模块
-│   ├── delta_g_formula.py # ΔG统一公式
+pangu/
+├── core/                 # 核心公式
+│   ├── delta_g_formula.py
 │   ├── constraint_engine.py
 │   └── params.yaml
-├── align/                 # 对齐模块
+├── align/                # 对齐模块
 │   ├── prompt_aligner.py
 │   └── md_aligner.py
-├── engine/                # 引擎模块
+├── engine/               # LLM钩子
 │   └── llm_hook.py
-├── memory/                # 内存模块
+├── memory/               # 记忆持久化
 │   ├── memory_persist.py
 │   └── memory_hook.py
-├── self-evolve/           # 自进化模块
+├── self-evolve/          # 自我进化
 │   ├── skill_self_check.py
 │   └── auto_skill_fetch.py
-├── code-standard/         # 代码标准模块
+├── code-standard/        # 代码规范
 │   ├── standard_baseline.py
 │   ├── code_compliance.py
 │   └── standard_hook.py
-├── emotion/               # 情绪模块
+├── emotion/              # 情感温度
 │   ├── emotion_core.py
 │   └── emotion_hook.py
-├── auto-agent/            # 自动代理模块
+├── auto-agent/          # 主动智能体
 │   ├── self_inspect.py
 │   ├── self_heal.py
 │   ├── github_auto_fetch.py
 │   └── agent_hook.py
-├── config/                # 配置
-├── docs/                  # 文档
+├── docs/
 │   └── APEX_DG_Theory.md
-├── tests/                 # 测试
-└── examples/             # 示例
+├── tests/
+│   └── test_pangu.py (38个测试)
+├── config/
+│   └── default_config.json
+├── storage/              # 存储目录
+├── baseline-v1/         # 基线目录
+├── install.sh
+├── run_init.py
+└── README.md
 ```
 
-## ΔG 公式
+---
 
-### 参数说明
+## 核心能力
 
-| 参数 | 名称 | 范围 | 说明 |
-|------|------|------|------|
-| H | 信息熵 | [0, 8] | 信息混乱程度 |
-| F | 事实性因子 | [0, 1] | 信息真实度 |
-| L | 上下文长度 | [0, ∞) | Token数量 |
-| N | 噪声干扰 | [0, 1] | 环境噪声 |
-| C | 通道容量 | [0, ∞) | 处理能力 |
-| Ω | 语义覆盖度 | [0, 1] | 理解覆盖 |
-| ∇E | 能量梯度 | [0, 1] | 系统活跃度 |
-| Γ | 压缩效率 | [0, 1] | 压缩质量 |
-| Ψ | 协议合规度 | [0, 1] | 规则遵守 |
-| Θ | 逻辑一致性 | [0, 1] | 推理连贯性 |
-
-### 系统状态阈值
-
-```
-ΔG ≤ 2.10:  健康稳态
-2.10 < ΔG ≤ 4.0:  轻度偏离 → 自动局部修复
-ΔG > 4.0:  严重越界 → 触发全量重启自愈
-```
-
-## 璇玑五基因
-
-| 基因 | 名称 | 功能 |
+| 模块 | 能力 | 状态 |
 |------|------|------|
-| Think-Before | 思前 | 三思而后行 |
-| Quantize | 量化 | 精确量化指标 |
-| Stability | 稳态 | 维持稳定 |
-| Pragmatic | 务实 | 注重实效 |
-| Eternal | 永恒 | 持续进化 |
+| ΔG公式 | 七大维度统一约束，从根源压制幻觉 | ✅ |
+| 记忆持久化 | 隔夜/重启不丢失配置与对话 | ✅ |
+| 代码自规范 | 自动建立代码/注释/MD全套标准 | ✅ |
+| 情感温度 | 对话自带共情，脱离机械冰冷 | ✅ |
+| 主动自治 | 定时自检、主动汇报、自行自愈 | ✅ |
+| GitHub补能 | 真实联网检索，自动克隆项目补能力 | ✅ |
+
+---
+
+## 理论支撑
+
+盘古以香农三大定律为物理底层，叠加APEX ΔG全域演化公式，实现七大模块统一约束。
+
+详见 [理论白皮书](docs/APEX_DG_Theory.md)
+
+---
 
 ## 贡献
 
-欢迎提交 Issue 和 Pull Request!
+欢迎提交Issue和Pull Request！
 
-参见 [CONTRIBUTING.md](CONTRIBUTING.md)
+详见 [贡献指南](CONTRIBUTING.md)
+
+---
 
 ## 许可证
 
-MIT License - 参见 [LICENSE](LICENSE)
+MIT License - 详见 [LICENSE](LICENSE)
+
+---
+
+**盘古开天，LLM从混沌走向秩序。**
