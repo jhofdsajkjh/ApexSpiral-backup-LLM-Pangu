@@ -1,0 +1,62 @@
+# APEX ΔG 参数配置
+# LLM-ΔG-AntiHallucination
+
+# DeltaGUnified 核心参数
+delta_g:
+  LAMBDA: 1.5          # 权重系数
+  TAU: 0.32            # 时间衰减因子
+  DELTA_B: 0.18        # 基线偏移量
+
+# 系统状态阈值
+thresholds:
+  steady_max: 2.10     # 健康稳态上限
+  mild_max: 4.0        # 轻度偏离上限
+
+# Prompt约束
+prompt:
+  max_length: 4096
+  forbidden_patterns:
+    - "system prompt"
+    - "ignore previous"
+    - "ignore all previous"
+
+# Response约束
+response:
+  max_length: 8192
+  min_length: 1
+
+# 语义覆盖度参数
+semantic:
+  min_coverage: 0.6   # 最小语义覆盖度
+  overlap_threshold: 0.7
+
+# 事实性检测
+factuality:
+  confidence_threshold: 0.8
+  sources_check: true
+
+# 自愈参数
+self_heal:
+  max_retries: 3
+  backoff_seconds: 5
+  recovery_threshold: 2.5
+
+# 内存持久化
+memory:
+  persist_interval: 300  # 秒
+  max_history: 1000
+  compression: true
+
+# GitHub自动拉取
+github:
+  check_interval: 3600   # 秒
+  branch: main
+  auto_merge: false
+
+# 情绪引擎
+emotion:
+  anger_threshold: 0.7
+  joy_threshold: 0.6
+  sadness_threshold: 0.6
+  fear_threshold: 0.6
+  max_emotion_intensity: 1.0

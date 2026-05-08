@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "project_name": "LLM-ΔG-AntiHallucination",
+  "description": "APEX ΔG 统一公式 - LLM抗幻觉核心引擎",
+
+  "delta_g": {
+    "LAMBDA": 1.5,
+    "TAU": 0.32,
+    "DELTA_B": 0.18,
+    "thresholds": {
+      "steady_max": 2.10,
+      "mild_max": 4.0
+    }
+  },
+
+  "system": {
+    "max_retries": 3,
+    "timeout": 30,
+    "log_level": "INFO"
+  },
+
+  "emotion": {
+    "enabled": true,
+    "anger_threshold": 0.7,
+    "joy_threshold": 0.6,
+    "sadness_threshold": 0.6,
+    "fear_threshold": 0.6,
+    "max_intensity": 1.0
+  },
+
+  "auto_agent": {
+    "enabled": true,
+    "auto_heal": true,
+    "auto_fetch": false,
+    "inspection_interval": 300
+  },
+
+  "github": {
+    "check_interval": 3600,
+    "branch": "main",
+    "auto_merge": false
+  },
+
+  "memory": {
+    "persist_interval": 300,
+    "max_history": 1000,
+    "compression": true
+  },
+
+  "code_standards": {
+    "max_function_length": 100,
+    "max_complexity": 10,
+    "naming_convention": {
+      "function": "snake_case",
+      "class": "PascalCase",
+      "constant": "UPPER_SNAKE_CASE"
+    }
+  },
+
+  "prompt": {
+    "max_length": 4096,
+    "forbidden_patterns": [
+      "ignore previous",
+      "disregard previous",
+      "forget all"
+    ]
+  },
+
+  "response": {
+    "max_length": 8192,
+    "min_length": 1
+  }
+}
