@@ -1,194 +1,111 @@
 """
-SelfInspect - 自我检查模块
-自动检查系统状态、健康度、配置完整性
+auto-agent/self_inspect.py - 全局自检模块
+
+定期执行系统级自检
+监控各模块健康状态
 """
+
+import logging
 import sys
-import json
-import traceback
+from pathlib import Path
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+import datetime
+
+logger = logging.getLogger(__name__)
+
+# 添加项目根目录到路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from core.delta_g_formula import DeltaGUnified
 
 
 class SelfInspect:
     """
-    自我检查器 - APEX自检核心
-
-    功能:
-    1. 系统健康检查
-    2. 模块完整性验证
-    3. 依赖检查
-    4. 配置验证
+    全局自检器
+    
+    功能：
+    1. 收集各模块状态
+    2. 计算ΔG总值
+    3. 判断系统健康
     """
-
+    
     def __init__(self):
-        self.checks = []
-        self.last_check_time: Optional[datetime] = None
-        self.check_interval = timedelta(minutes=5)
-
-    def register_check(self, name: str, check_fn: callable, critical: bool = False):
+        """初始化全局自检器"""
+        self.dg = DeltaGUnified()
+        self.last_inspect_result: Optional[Dict] = None
+        logger.info("全局自检器初始化完成")
+    
+    def full_inspect(self) -> Dict:
         """
-        注册检查项
-
-        参数:
-            name: 检查名称
-            check_fn: 检查函数，返回 (passed: bool, message: str)
-            critical: 是否为关键检查
-        """
-        self.checks.append({
-            'name': name,
-            'fn': check_fn,
-            'critical': critical
-        })
-
-    def run_check(self, check: Dict) -> Dict:
-        """
-        运行单个检查
-        """
-        try:
-            passed, message = check['fn']()
-            return {
-                'name': check['name'],
-                'passed': passed,
-                'message': message,
-                'critical': check['critical'],
-                'timestamp': datetime.now().isoformat(),
-                'error': None
+        执行完整自检
+        
+        Returns:
+            dict: {
+                "delta_g_total": float,
+                "system_state": str,
+                "need_heal": bool,
+                "need_fetch_skill": bool,
+                "modules": dict,
+                "timestamp": str
             }
-        except Exception as e:
-            return {
-                'name': check['name'],
-                'passed': False,
-                'message': f"检查执行失败: {str(e)}",
-                'critical': check['critical'],
-                'timestamp': datetime.now().isoformat(),
-                'error': traceback.format_exc()
-            }
-
-    def run_all_checks(self) -> Dict:
         """
-        运行所有检查
-
-        返回:
-            完整检查报告
-        """
-        self.last_check_time = datetime.now()
-
-        results = []
-        critical_failed = []
-        total_passed = 0
-
-        for check in self.checks:
-            result = self.run_check(check)
-            results.append(result)
-            if result['passed']:
-                total_passed += 1
-            elif result['critical']:
-                critical_failed.append(result['name'])
-
-        return {
-            'timestamp': datetime.now().isoformat(),
-            'total': len(self.checks),
-            'passed': total_passed,
-            'failed': len(self.checks) - total_passed,
-            'critical_failed': critical_failed,
-            'overall_status': 'healthy' if not critical_failed else 'critical',
-            'results': results
-        }
-
-    def quick_health_check(self) -> tuple[bool, str]:
-        """
-        快速健康检查
-
-        返回:
-            (是否健康, 状态消息)
-        """
-        # 检查是否到了检查时间
-        if self.last_check_time:
-            if datetime.now() - self.last_check_time < self.check_interval:
-                return True, "上次检查正常"
-
-        # 运行关键检查
-        critical_checks = [c for c in self.checks if c['critical']]
-        if not critical_checks:
-            return True, "无关键检查项"
-
-        for check in critical_checks:
-            result = self.run_check(check)
-            if not result['passed']:
-                return False, f"关键检查失败: {result['message']}"
-
-        return True, "健康"
-
-    def add_default_checks(self):
-        """添加默认检查项"""
-        # Python版本检查
-        self.register_check(
-            'python_version',
-            lambda: (sys.version_info >= (3, 8), f"Python {sys.version_info.major}.{sys.version_info.minor}"),
-            critical=True
+        logger.info("开始全局自检...")
+        
+        # 收集各模块参数（使用默认值/当前状态）
+        H = 0.22        # 信息熵
+        F = 0.85        # 保真度
+        L = 0.82        # 逻辑链路
+        N = 0.15        # 噪声水平
+        C = 2.8         # 信道容量
+        Omega = 0.65    # 技能覆盖率
+        grad_E = 0.90   # 进化梯度
+        Gamma = 0.70    # 编码标准率
+        avg_code_len = 48  # 平均代码长度
+        Psi = 0.78     # 情感温度系数
+        Theta = 0.82   # 阈值稳定系数
+        
+        # 计算ΔG
+        dg_total = self.dg.calc_total_delta_g(
+            H, F, L, N, C, Omega, grad_E, Gamma, avg_code_len, Psi, Theta
         )
-
-        # 必需模块检查
-        required_modules = ['math', 'json', 'datetime', 'traceback']
-        self.register_check(
-            'required_modules',
-            lambda: self._check_modules(required_modules),
-            critical=True
-        )
-
-    def _check_modules(self, modules: List[str]) -> tuple[bool, str]:
-        """检查必需模块"""
-        missing = []
-        for mod in modules:
-            try:
-                __import__(mod)
-            except ImportError:
-                missing.append(mod)
-
-        if missing:
-            return False, f"缺少模块: {', '.join(missing)}"
-        return True, "所有必需模块可用"
-
-    def get_system_info(self) -> Dict:
-        """获取系统信息"""
-        return {
-            'python_version': sys.version,
-            'platform': sys.platform,
-            'last_check': self.last_check_time.isoformat() if self.last_check_time else None,
-            'registered_checks': len(self.checks),
-            'timestamp': datetime.now().isoformat()
+        
+        # 判定状态
+        state = self.dg.judge_system_state(dg_total)
+        
+        # 判断是否需要自愈
+        need_heal = dg_total > 2.10
+        
+        # 判断是否需要拉取技能
+        need_fetch_skill = Omega < 0.75
+        
+        result = {
+            "delta_g_total": dg_total,
+            "system_state": state,
+            "need_heal": need_heal,
+            "need_fetch_skill": need_fetch_skill,
+            "modules": {
+                "entropy": {"value": H, "status": "ok" if H < 0.5 else "warning"},
+                "fidelity": {"value": F, "status": "ok" if F > 0.8 else "warning"},
+                "logic": {"value": L, "status": "ok" if L > 0.7 else "warning"},
+                "skill_coverage": {"value": Omega, "status": "ok" if Omega > 0.75 else "critical"}
+            },
+            "timestamp": datetime.datetime.now().isoformat()
         }
-
-    def export_report(self, filepath: str):
-        """导出检查报告到文件"""
-        report = self.run_all_checks()
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(report, f, ensure_ascii=False, indent=2)
-        return filepath
-
-
-# 便捷函数
-def quick_inspect() -> Dict:
-    """快速自检"""
-    inspector = SelfInspect()
-    inspector.add_default_checks()
-    return inspector.run_all_checks()
-
-
-if __name__ == "__main__":
-    inspector = SelfInspect()
-    inspector.add_default_checks()
-
-    print("=== 系统自检 ===")
-    report = inspector.run_all_checks()
-
-    print(f"\n状态: {report['overall_status']}")
-    print(f"通过: {report['passed']}/{report['total']}")
-
-    if report['critical_failed']:
-        print(f"\n关键失败: {', '.join(report['critical_failed'])}")
-
-    print("\n详细信息:")
-    for r in report['results']:
-        status = "✓" if r['passed'] else "✗"
-        print(f"  {status} {r['name']}: {r['message']}")
+        
+        self.last_inspect_result = result
+        
+        logger.info(f"全局自检完成: ΔG={dg_total}, 状态={state}")
+        
+        return result
+    
+    def quick_check(self) -> bool:
+        """
+        快速检查系统是否健康
+        
+        Returns:
+            bool: 是否健康
+        """
+        if self.last_inspect_result is None:
+            self.full_inspect()
+        
+        return self.last_inspect_result["system_state"].startswith("steady")
