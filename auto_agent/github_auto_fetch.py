@@ -6,6 +6,7 @@ auto-agent/github_auto_fetch.py - GitHub自动拉取模块
 
 import logging
 import subprocess
+import os
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ class GitHubAutoFetch:
     
     def _clone_repo(self, repo_url: str, name: str) -> Dict:
         """
-        克隆仓库
+        真实克隆GitHub仓库
         
         Args:
             repo_url: 仓库URL
@@ -72,18 +73,32 @@ class GitHubAutoFetch:
         """
         logger.info(f"克隆仓库: {repo_url}")
         
-        # 模拟克隆（实际实现应调用git）
-        # try:
-        #     subprocess.run(["git", "clone", repo_url, f"storage/{name}"], check=True)
-        # except subprocess.CalledProcessError as e:
-        #     logger.error(f"克隆失败: {e}")
-        #     return {"success": False, "error": str(e)}
+        target_dir = f"storage/github_skills/{name}"
+        os.makedirs(os.path.dirname(target_dir), exist_ok=True)
         
-        return {
-            "success": True,
-            "repo": repo_url,
-            "path": f"storage/{name}"
-        }
+        try:
+            result = subprocess.run(
+                ["git", "clone", "--depth", "1", repo_url, target_dir],
+                capture_output=True, text=True, timeout=60
+            )
+            if result.returncode == 0:
+                logger.info(f"克隆成功: {target_dir}")
+                self.fetch_history.append({
+                    "repo": repo_url,
+                    "name": name,
+                    "path": target_dir,
+                    "success": True
+                })
+                return {"success": True, "repo": repo_url, "path": target_dir}
+            else:
+                logger.error(f"克隆失败: {result.stderr}")
+                return {"success": False, "error": result.stderr}
+        except subprocess.TimeoutExpired:
+            logger.error("克隆超时（60秒）")
+            return {"success": False, "error": "Clone timeout (60s)"}
+        except Exception as e:
+            logger.error(f"克隆异常: {e}")
+            return {"success": False, "error": str(e)}
     
     def search_and_fetch(self, query: str) -> List[Dict]:
         """

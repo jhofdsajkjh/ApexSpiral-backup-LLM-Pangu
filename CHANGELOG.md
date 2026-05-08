@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-05-08
+
+### Fixed
+
+- README夸大描述全部修正为诚实说明
+- 明确标注各项功能的真实实现状态
+- LLM接入标注为"开发中"而非"已完成"
+- 移除"全球首个"等无法证实的宣称
+- CHANGELOG同步更新v1.1.0修复版本
+
 ## [1.0.0] - 2026-05-08
 
 ### Added
