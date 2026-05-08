@@ -256,3 +256,21 @@ def quick_calc_delta_g(**kwargs) -> dict:
     total = dg.calc_total_delta_g(**kwargs)
     state = dg.judge_system_state(total)
     return {"delta_g_total": total, "system_state": state}
+
+
+def quick_calc(H: float, F: float, L: float, N: float = 0.0, C: float = 1.0,
+               Omega: float = 1.0, grad_E: float = 0.0, Gamma: float = 1.0,
+               avg_code_len: float = 1.0, Psi: float = 1.0, Theta: float = 1.0) -> tuple:
+    """
+    快速计算ΔG并返回状态判断（元组格式）
+    
+    Returns:
+        tuple: (delta_g_total, system_state)
+    
+    Usage:
+        >>> dg, state = quick_calc(H=2.0, F=0.9, L=100)
+    """
+    dg = DeltaGUnified()
+    total = dg.calc_total_delta_g(H, F, L, N, C, Omega, grad_E, Gamma, avg_code_len, Psi, Theta)
+    state = dg.judge_system_state(total)
+    return total, state
