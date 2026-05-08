@@ -1,99 +1,117 @@
 """
-技能自检模块 - 自动检查和更新技能
+self-evolve/skill_self_check.py - 技能自检模块
+
+定期检查已安装技能的完整性和健康状态
+确保技能库处于可用状态
 """
-import os
-import json
-import hashlib
+
+import logging
 from typing import Dict, List, Optional
-from datetime import datetime
+from pathlib import Path
+import json
+
+logger = logging.getLogger(__name__)
 
 
 class SkillSelfCheck:
-    """技能自检器"""
-
-    def __init__(self, skill_dir: str = "skills"):
-        self.skill_dir = skill_dir
-        self.manifest_path = os.path.join(skill_dir, "manifest.json")
-        self.manifest = self._load_manifest()
-
-    def _load_manifest(self) -> dict:
-        """加载技能清单"""
-        if os.path.exists(self.manifest_path):
-            with open(self.manifest_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def _save_manifest(self):
-        """保存技能清单"""
-        with open(self.manifest_path, 'w', encoding='utf-8') as f:
-            json.dump(self.manifest, f, ensure_ascii=False, indent=2)
-
-    def register_skill(self, skill_name: str, skill_path: str, version: str = "1.0.0") -> bool:
+    """
+    技能自检器
+    
+    功能：
+    1. 检查技能文件完整性
+    2. 验证技能依赖
+    3. 检测技能冲突
+    4. 生成健康报告
+    """
+    
+    def __init__(self, skill_dir: str = "storage/skills"):
         """
-        注册技能
+        初始化技能自检器
+        
+        Args:
+            skill_dir: 技能目录路径
         """
-        self.manifest[skill_name] = {
-            'path': skill_path,
-            'version': version,
-            'registered_at': datetime.now().isoformat(),
-            'status': 'active'
+        self.skill_dir = Path(skill_dir)
+        self.manifest_file = self.skill_dir / "manifest.json"
+        logger.info(f"技能自检器初始化，目录: {self.skill_dir}")
+    
+    def check_all(self) -> Dict:
+        """
+        执行全量技能检查
+        
+        Returns:
+            dict: {
+                "total": int,       # 总技能数
+                "healthy": int,     # 健康技能数
+                "issues": list,     # 问题列表
+                "health_score": float  # 健康分数
+            }
+        """
+        logger.info("开始技能自检...")
+        
+        # 检查manifest是否存在
+        if not self.manifest_file.exists():
+            logger.warning("技能清单不存在，创建默认清单")
+            self._create_default_manifest()
+        
+        # 加载清单
+        manifest = self._load_manifest()
+        
+        # 检查每个技能
+        results = {
+            "total": len(manifest.get("skills", [])),
+            "healthy": 0,
+            "issues": [],
+            "health_score": 1.0
         }
-        self._save_manifest()
-        return True
-
-    def unregister_skill(self, skill_name: str) -> bool:
-        """
-        注销技能
-        """
-        if skill_name in self.manifest:
-            del self.manifest[skill_name]
-            self._save_manifest()
-            return True
-        return False
-
-    def check_skill_integrity(self, skill_name: str) -> Dict[str, any]:
-        """
-        检查技能完整性
-        """
-        if skill_name not in self.manifest:
-            return {'valid': False, 'reason': 'Skill not registered'}
-
-        skill_info = self.manifest[skill_name]
-        skill_path = skill_info['path']
-
-        if not os.path.exists(skill_path):
-            return {'valid': False, 'reason': 'Skill file not found'}
-
-        # 计算文件哈希
-        file_hash = self._calculate_file_hash(skill_path)
-
-        return {
-            'valid': True,
-            'hash': file_hash,
-            'size': os.path.getsize(skill_path),
-            'last_modified': datetime.fromtimestamp(os.path.getmtime(skill_path)).isoformat()
-        }
-
-    def _calculate_file_hash(self, filepath: str) -> str:
-        """计算文件哈希"""
-        sha256 = hashlib.sha256()
-        with open(filepath, 'rb') as f:
-            for chunk in iter(lambda: f.read(4096), b''):
-                sha256.update(chunk)
-        return sha256.hexdigest()
-
-    def list_skills(self) -> List[str]:
-        """列出所有技能"""
-        return list(self.manifest.keys())
-
-    def get_skill_info(self, skill_name: str) -> Optional[dict]:
-        """获取技能信息"""
-        return self.manifest.get(skill_name)
-
-    def validate_all(self) -> Dict[str, bool]:
-        """验证所有技能"""
-        results = {}
-        for skill_name in self.manifest:
-            result = self.check_skill_integrity(skill_name)
-            results[skill_name] = result['valid']
+        
+        for skill in manifest.get("skills", []):
+            skill_check = self._check_skill(skill)
+            if skill_check["healthy"]:
+                results["healthy"] += 1
+            else:
+                results["issues"].append(skill_check["issue"])
+        
+        # 计算健康分数
+        if results["total"] > 0:
+            results["health_score"] = results["healthy"] / results["total"]
+        
+        logger.info(f"技能自检完成: {results['healthy']}/{results['total']} 健康")
+        
         return results
+    
+    def _check_skill(self, skill: Dict) -> Dict:
+        """检查单个技能"""
+        skill_path = self.skill_dir / skill.get("path", "")
+        
+        if not skill_path.exists():
+            return {
+                "healthy": False,
+                "issue": f"技能路径不存在: {skill.get('name')}"
+            }
+        
+        # 检查必要文件
+        required_files = ["SKILL.md"]
+        for req in required_files:
+            if not (skill_path / req).exists():
+                return {
+                    "healthy": False,
+                    "issue": f"技能缺少必要文件: {skill.get('name')}/{req}"
+                }
+        
+        return {"healthy": True}
+    
+    def _create_default_manifest(self) -> None:
+        """创建默认技能清单"""
+        manifest = {
+            "version": "1.0",
+            "skills": []
+        }
+        self.skill_dir.mkdir(parents=True, exist_ok=True)
+        with open(self.manifest_file, 'w') as f:
+            json.dump(manifest, f, indent=2)
+    
+    def _load_manifest(self) -> Dict:
+        """加载技能清单"""
+        with open(self.manifest_file, 'r') as f:
+            return json.load(f)

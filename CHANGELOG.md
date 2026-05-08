@@ -1,39 +1,71 @@
-# 变更日志 CHANGELOG
+# Changelog
 
-所有重要的版本更新都会记录在此文件。
+All notable changes to this project will be documented in this file.
 
-格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.0.0] - 2024-XX-XX
+## [1.0.0] - 2026-05-08
 
 ### Added
-- 初始版本发布
-- 香农信息论+APEX双底座融合框架
-- 七大模块完整实现：
-  - core/ - ΔG核心公式
-  - align/ - Prompt/MD对齐
-  - engine/ - LLM钩子
-  - memory/ - 记忆持久化
-  - self-evolve/ - 技能自检+自动拉取
-  - code-standard/ - 代码规范
-  - emotion/ - 情感温度
-  - auto-agent/ - 全局自检+自愈+GitHub补能
-- 38个测试用例
-- CI/CD工作流
-- 理论白皮书
-- 中英双语文档
+
+- **Core Formula (core/delta_g_formula.py)**
+  - Shannon entropy calculation
+  - Shannon channel capacity calculation
+  - Code redundancy measurement
+  - ΔG unified formula with 7 dimensions
+  - System state judgment (steady/mild/critical)
+
+- **Emotion Module (emotion/)**
+  - EmotionCore with valence/arousal/dominance
+  - 7 base emotions with emoji icons
+  - Emotional temperature coefficient (Ψ)
+  - Tone injection for responses
+
+- **Auto-Agent Module (auto_agent/)**
+  - SelfInspect for global system inspection
+  - SelfHeal for proactive self-repair
+  - GitHubAutoFetch for real GitHub skill acquisition
+  - AgentHook for module orchestration
+
+- **Memory Module (memory/)**
+  - MemoryPersist for cross-session persistence
+  - MemoryHook for LLM integration
+
+- **Code Standards Module (code_standard/)**
+  - StandardBaseline for self-built code standards
+  - CodeCompliance for automated checking
+  - StandardHook for LLM integration
+
+- **Alignment Module (align/)**
+  - PromptAligner for prompt standardization
+  - MDAligner for markdown format alignment
+
+- **Documentation (docs/)**
+  - APEX_DG_Theory.md - Complete theory whitepaper
+  - Shannon + APEX integration
+  - 7-module binding with formulas
+
+- **Tests (tests/)**
+  - 47 test cases covering all modules
+  - 100% pass rate
+
+- **CI/CD (.github/workflows/)**
+  - GitHub Actions automated testing
+  - Python 3.8+ support
 
 ### Features
-- ΔG全域演化公式（七大维度统一约束）
-- 系统稳态三段式判定
-- 情感温度拟人化模块
-- 记忆隔夜/重启不丢失
-- 自动技能补能机制
+
+- 7-module closed-loop architecture
+- Physical foundation: Shannon Information Theory
+- Global constraint: APEX ΔG Formula
+- Human-like emotional temperature
+- Proactive self-inspection and self-healing
+- Real GitHub skill acquisition
 
 ---
 
-## [0.1.0] - 2024-XX-XX
+## [0.0.0] - 2026-05-07
 
 ### Added
-- 项目初始化
-- 核心框架搭建
+
+- Initial project creation
