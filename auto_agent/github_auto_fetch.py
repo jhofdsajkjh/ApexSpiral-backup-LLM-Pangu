@@ -7,6 +7,7 @@ auto-agent/github_auto_fetch.py - GitHub自动拉取模块
 import logging
 import subprocess
 import os
+import requests
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -100,18 +101,35 @@ class GitHubAutoFetch:
             logger.error(f"克隆异常: {e}")
             return {"success": False, "error": str(e)}
     
-    def search_and_fetch(self, query: str) -> List[Dict]:
-        """
-        搜索并拉取
-        
-        Args:
-            query: 搜索关键词
-            
-        Returns:
-            list: 匹配结果
-        """
-        logger.info(f"搜索GitHub: {query}")
-        
-        # 实际实现应调用GitHub API
-        # 这里简化处理
-        return []
+    def search_and_fetch(self, capability: str) -> dict:
+        """搜索并获取指定能力的代码仓库"""
+        try:
+            # 构造GitHub API查询
+            headers = {
+                "Accept": "application/vnd.github.v3+json",
+                "Authorization": f"token {os.environ.get('GITHUB_TOKEN', '')}"
+            }
+            params = {
+                "q": f"{capability} language:python in:readme",
+                "per_page": 5,
+                "sort": "stars",
+                "order": "desc"
+            }
+            resp = requests.get(
+                "https://api.github.com/search/repositories",
+                headers=headers, params=params, timeout=10
+            )
+            if resp.status_code == 200:
+                items = resp.json().get("items", [])
+                if items:
+                    repo = items[0]
+                    return {
+                        "name": repo.get("full_name", ""),
+                        "url": repo.get("html_url", ""),
+                        "stars": repo.get("stargazers_count", 0),
+                        "description": repo.get("description", ""),
+                        "language": repo.get("language", ""),
+                    }
+            return {"error": f"API returned {resp.status_code}"}
+        except Exception as e:
+            return {"error": str(e)}
